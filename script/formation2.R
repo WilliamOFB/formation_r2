@@ -49,3 +49,12 @@ oison_taxon %>%
 # on peut créer un vecteur 'nom colonnes' et sélectionner avec ça
 
 ## Filtre ----
+oison_taxon %>% 
+  dplyr::filter(nom_scientifique == 'Canis lupus') %>% 
+  dplyr::select(observation_id:nom_vernaculaire) %>% 
+  view()
+
+oison_taxon %>% 
+  dplyr::filter(email == 'camille.riviere@ofb.gouv.fr' | email == 'didier.pujo@ofb.gouv.fr') %>% 
+  dplyr::select(observation_id:nom_vernaculaire) %>% 
+  view()
