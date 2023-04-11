@@ -1,3 +1,3 @@
-# formation_r2
+# Formation R 2
 
 Voilà l'atelier session 2
