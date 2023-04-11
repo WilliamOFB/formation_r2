@@ -2,6 +2,7 @@
 library(tidyverse)
 library(sf)
 library(readr)
+library(palmerpenguins)
 
 # Import data -----
 oison_taxon <- read.csv("raw_data/oison_taxon.csv")
@@ -129,14 +130,83 @@ oison_taxon %>%
   head() %>% # 6 premières lignes du tableau
   view()
 
-oison_taxon %>% 
-  dplyr::select(observation_id, nom_vernaculaire) %>% 
+oison_taxon %>%
+  dplyr::select(observation_id, nom_vernaculaire) %>%
   rename_with(toupper) %>% # tout en majuscule ou minuscule (tolower)
   view()
 
 ## Relocalisation
-oison_taxon %>% 
-  dplyr::select(observation_id, date, nom_vernaculaire, uuid) %>% 
+oison_taxon %>%
+  dplyr::select(observation_id, date, nom_vernaculaire, uuid) %>%
   relocate(uuid, .after = observation_id) %>% # par défaut en 1er
   view()
 
+## Transformation de plusieurs colonnes ----
+# pour éviter de faire mean un à un...
+penguins %>%
+  group_by(species) %>%
+  summarise(across(contains("_"), mean, na.rm = T)) %>%
+  view()
+
+## Comptage ----
+# tirage aléatoire de nom de taxon
+
+# set.seed (88) # pour toujours avoir même résulat
+
+taxon_alea <- oison_taxon %>% 
+  pull(nom_vernaculaire) %>% 
+  unique() %>% 
+  sample(10)
+
+oison_taxon %>% 
+  dplyr::select(starts_with("nom_")) %>% 
+  filter(nom_vernaculaire %in% taxon_alea) %>% 
+  group_by(nom_vernaculaire) %>% 
+  count() %>% 
+  view()
+
+## Recodage de valeurs ----
+oison_taxon %>% 
+  dplyr::select(starts_with('nom')) %>% 
+  filter(nom_vernaculaire == 'Linotte mélodieuse') %>% 
+  distinct() %>% 
+  mutate(nom_vernaculaire2 = case_when(nom_scientifique == 'Carduelis cannabina' ~ 'Linaria cannabina',
+         TRUE ~ nom_scientifique)) %>% 
+  view()
+
+oison_taxon %>%
+  dplyr::filter(presence == 'Absent' & !is.na(nombre_individu)) %>%
+  dplyr::select(observation_id,
+                date,
+                nom_scientifique,
+                presence,
+                nombre_individu) %>%
+  dplyr::filter(nombre_individu > 0) %>%
+  mutate(nb_ind_new = if_else(
+      nom_scientifique == "Faxonius limosus" & presence == 'Absent',
+      "zero",
+      "à changer + tard")) %>%
+  view()
+
+## Réorganisation des données ----
+### Format large à format long (croisé dynamique)  ----
+bufo_long <- table_bufo %>% 
+  pivot_longer(cols = -c(numero_region), # on conserve cette colonne
+               names_to = 'annee', # inversion colonnes & lignes
+               values_to = 'nombre_observation') %>% 
+  view()
+
+### Format long à format large ----
+bufo_large <- bufo_long %>% 
+  pivot_wider(names_from = annee,
+              values_from = nombre_observation) %>% 
+  view()
+
+bufo_long %>% 
+  pivot_wider(names_from = annee,
+              values_from = nombre_observation,
+              values_fill = 0) %>% 
+  view()
+
+## Jointure et assemblage de tables ----
+### Jointure ----
